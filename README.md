@@ -68,3 +68,21 @@ npm run test:cov
 ```
 
 Cobertura mínima exigida: 80% (branches, functions, lines, statements). Ajuste em `package.json` se necessário.
+
+---
+
+## 🔒 Segurança e Segredos
+
+- Nunca commitar arquivos `.env` com credenciais reais (o repositório já ignora por padrão).
+- Use GitHub Secrets para: `DATABASE_URL`, `JWT_SECRET`, `SONAR_TOKEN`, chaves Cloudinary e qualquer token externo.
+- Rotacione segredos expostos imediatamente (caso algum tenha sido commitado antes).
+- Tokens de análise (Sonar / Codecov) não devem ser reutilizados entre projetos.
+- Em produção utilize usuários de banco com permissões mínimas (princípio do menor privilégio).
+- Evite logs contendo tokens ou senhas.
+
+Checklist rápido:
+1. `SONAR_TOKEN` definido apenas em Secrets.
+2. `JWT_SECRET` diferente para ambientes dev/stage/prod.
+3. Usuário do banco sem permissões de DROP em produção (se possível).
+4. Revisar histórico para remoção de segredos expostos (BFG ou git filter-repo se necessário).
+5. Habilitar branch protection em `main` exigindo status da pipeline.

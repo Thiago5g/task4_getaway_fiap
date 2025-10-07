@@ -56,6 +56,9 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:cov
 
+      - name: Compute average coverage (>=80%)
+        run: npm run coverage:avg
+
       - name: Check coverage threshold (average >= 80%)
         run: |
           COVERAGE=$(node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('./coverage/coverage-summary.json','utf8'));const l=c.total.lines.pct,s=c.total.statements.pct,f=c.total.functions.pct,b=c.total.branches.pct;const avg=(l+s+f+b)/4;console.log(avg.toFixed(2));")
