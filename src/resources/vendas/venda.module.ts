@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
-import { VendaController } from './controller/venda.controller';
 import { VendaService } from './service/venda.service';
+import { VendaController } from './controller/venda.controller';
 import { Cliente } from '../clientes/entity/cliente.entity';
 import { Veiculo } from '../veiculos/entity/veiculo.entity';
 import { VendaMicroserviceClient } from './service/venda-microservice.client';
