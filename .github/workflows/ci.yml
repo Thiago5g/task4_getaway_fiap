@@ -70,7 +70,8 @@ jobs:
           path: coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        # v3.1.4 commit SHA (exemplo) - substituir por último recomendado se desejar
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
         with:
           files: ./coverage/lcov.info
           flags: unittests
@@ -98,11 +99,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests with coverage (for sonar)
-        run: npm run test:cov
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        # Pin SHA da ação (exemplo de commit estável) - atualizar conforme changelog oficial
+        uses: SonarSource/sonarcloud-github-action@e6d4a8d09a2c2a2c1e0c1a538d5b8f4d4c4b6e04
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -1,5 +1,13 @@
 # Plataforma de Revenda de Veículos – Backend API
 
+![CI](https://github.com/Thiago5g/task4_getaway_fiap/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-80%2B-green?style=flat)
+![Sonar Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=alert_status)
+![Sonar Maintainability](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=sqale_rating)
+![Sonar Security](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=security_rating)
+
+> Substitua `REPLACE_ME_PROJECT_KEY` após configurar o projeto no SonarCloud.
+
 Esta é a API para uma plataforma de revenda de veículos construída com NestJS e TypeORM, como parte do desafio Sub Tech Challenge do curso SOAT – PósTech (fase 3).
 
 ---
