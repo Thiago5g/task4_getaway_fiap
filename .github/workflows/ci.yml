@@ -10,126 +10,112 @@ jobs:
   test:
     name: Run Tests and Coverage
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         node-version: [20.x]
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Start test database
-        run: |
-          docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=app -p 5432:5432 postgres:15-alpine
-          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app" >> $GITHUB_ENV
+    - name: Run linter
+      run: npm run lint
 
-      - name: Run lint
-        run: npm run lint
+    - name: Run tests with coverage
+      run: npm run test:cov
 
-      - name: Check coverage threshold
-        run: |
-          COVERAGE=$(node -e "
-            const fs = require('fs');
-            const coverage = JSON.parse(fs.readFileSync('./coverage/coverage-summary.json', 'utf8'));
-            const lines = coverage.total.lines.pct;
-            const statements = coverage.total.statements.pct;
-            const functions = coverage.total.functions.pct;
-            const branches = coverage.total.branches.pct;
-            const avg = (lines + statements + functions + branches) / 4;
-            console.log(avg.toFixed(2));
-          ")
-          echo "Coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
-            echo "✅ Coverage is above 80% ($COVERAGE%)"
-          else
-            echo "❌ Coverage is below 80% ($COVERAGE%)"
-            exit 1
-          fi
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(node -e "
+          const fs = require('fs');
+          const coverage = JSON.parse(fs.readFileSync('./coverage/coverage-summary.json', 'utf8'));
+          const lines = coverage.total.lines.pct;
+          const statements = coverage.total.statements.pct;
+          const functions = coverage.total.functions.pct;
+          const branches = coverage.total.branches.pct;
+          const avg = (lines + statements + functions + branches) / 4;
+          console.log(avg.toFixed(2));
+        ")
+        echo "Coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+          echo "✅ Coverage is above 80% ($COVERAGE%)"
+        else
+          echo "❌ Coverage is below 80% ($COVERAGE%)"
+          exit 1
+        fi
 
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage
-
-      - name: Upload coverage to Codecov
-        # v3.1.4 commit SHA (exemplo) - substituir por último recomendado se desejar
-        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
 
   sonarcloud:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: 'npm'
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Download coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage
+    - name: Run tests with coverage for SonarCloud
+      run: npm run test:cov
 
-      - name: SonarCloud Scan (Quality Gate)
-        uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.qualitygate.wait=true
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   build:
     name: Build Application
     runs-on: ubuntu-latest
     needs: test
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: 'npm'
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Build application
-        run: npm run build
+    - name: Build application
+      run: npm run build
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-files
-          path: dist/
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: dist/
