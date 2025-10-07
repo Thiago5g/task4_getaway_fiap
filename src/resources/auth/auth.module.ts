@@ -9,7 +9,7 @@ import { UsuarioModule } from '../usuarios/usuario.module';
 @Module({
   imports: [
     UsuarioModule,
-    ConfigModule, 
+    ConfigModule,
     // UsuarioModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

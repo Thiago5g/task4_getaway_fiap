@@ -21,11 +21,11 @@ export class VeiculoService {
       veiculo: salvo,
     };
   }
-  
+
   async editarVeiculo(id: number, data: Partial<Veiculo>) {
     const veiculo = await this.veiculoRepo.findOneBy({ id });
     if (!veiculo) throw new NotFoundException('Veículo não encontrado');
-  
+
     Object.assign(veiculo, data);
     const atualizado = await this.veiculoRepo.save(veiculo);
     return {

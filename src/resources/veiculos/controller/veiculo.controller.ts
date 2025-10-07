@@ -29,7 +29,10 @@ export class VeiculoController {
   @ApiOperation({ summary: 'Editar um veículo existente' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateVeiculoDto })
-  editar(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateVeiculoDto) {
+  editar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateVeiculoDto,
+  ) {
     return this.veiculoService.editarVeiculo(id, body);
   }
 
