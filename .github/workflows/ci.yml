@@ -88,7 +88,8 @@ jobs:
       run: npm run test:cov
 
     - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-github-action@master
+      # Commit SHA pin para evitar execução de código não verificado (substituir periodicamente por um SHA recente confiável)
+      uses: SonarSource/sonarcloud-github-action@4bf8e5ed41f61459880232ead263661e41e3f82d
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
