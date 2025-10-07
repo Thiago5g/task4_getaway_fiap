@@ -36,8 +36,8 @@ jobs:
       - name: Run lint
         run: npm run lint
 
-      - name: Run tests with coverage
-        run: npm run test:cov
+      - name: Run tests + coverage average
+        run: npm run coverage:full
 
       - name: Upload coverage artifact
         if: always()
@@ -82,12 +82,14 @@ jobs:
           name: coverage-report
           path: coverage
 
-      - name: SonarCloud Scan
-        # Pin SHA da ação (exemplo de commit estável) - atualizar conforme changelog oficial
-        uses: SonarSource/sonarcloud-github-action@e6d4a8d09a2c2a2c1e0c1a538d5b8f4d4c4b6e04
+      - name: SonarCloud Scan (Quality Gate)
+        uses: SonarSource/sonarcloud-github-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
 
   build:
     name: Build Application
