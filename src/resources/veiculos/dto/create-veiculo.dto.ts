@@ -22,7 +22,7 @@ export class CreateVeiculoDto {
   @IsNotEmpty()
   cor: string;
 
-  @ApiProperty({ example: 95000.00 })
+  @ApiProperty({ example: 95000.0 })
   @IsNumber()
   preco: number;
 
