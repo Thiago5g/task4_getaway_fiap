@@ -1,26 +1,28 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
-permissions:
-  contents: read
-
 jobs:
-  build-test:
+  test:
+    name: Run Tests and Coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    strategy:
+      matrix:
+        node-version: [20.x]
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Use Node.js 20
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -31,29 +33,15 @@ jobs:
           echo "DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/app}" >> .env
           echo "SALES_MS_URL=${SALES_MS_URL:-http://localhost:3001}" >> .env
           echo "JWT_SECRET=${JWT_SECRET:-dev_fallback_secret}" >> .env
-          echo "CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}" >> .env
-          echo "CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}" >> .env
-          echo "CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}" >> .env
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SALES_MS_URL: ${{ secrets.SALES_MS_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-        shell: bash
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-
-      - name: Set up test database
+      - name: Start test database
         run: |
           docker run -d --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=app -p 5432:5432 postgres:15-alpine
           echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app" >> $GITHUB_ENV
-        shell: bash
 
       - name: Wait for DB
         run: |
@@ -61,10 +49,18 @@ jobs:
             pg_isready -h localhost -p 5432 -U postgres && break
             sleep 1
           done
-        shell: bash
+
+      - name: Run linter
+        run: npm run lint
 
       - name: Run tests with coverage
         run: npm run test:cov
+
+      - name: Check coverage threshold (average >= 80%)
+        run: |
+          COVERAGE=$(node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('./coverage/coverage-summary.json','utf8'));const l=c.total.lines.pct,s=c.total.statements.pct,f=c.total.functions.pct,b=c.total.branches.pct;const avg=(l+s+f+b)/4;console.log(avg.toFixed(2));")
+          echo "Coverage Average: $COVERAGE%";
+          awk -v c=$COVERAGE 'BEGIN{ if (c+0 < 80) { print "❌ Coverage abaixo de 80%"; exit 1 } else { print "✅ Coverage ok" } }'
 
       - name: Upload coverage artifact
         if: always()
@@ -72,3 +68,67 @@ jobs:
         with:
           name: coverage-report
           path: coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage (for sonar)
+        run: npm run test:cov
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: dist/
