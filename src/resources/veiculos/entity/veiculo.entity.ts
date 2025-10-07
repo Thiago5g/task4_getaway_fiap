@@ -1,5 +1,11 @@
 // entity/veiculo.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum VeiculoStatus {
@@ -21,6 +27,10 @@ export class Veiculo {
   @ApiProperty()
   modelo: string;
 
+  @Column({ nullable: true, unique: true })
+  @ApiProperty({ example: 'ABC1D23', description: 'Placa do veículo' })
+  placa: string;
+
   @Column()
   @ApiProperty()
   ano: number;
@@ -37,11 +47,11 @@ export class Veiculo {
   @ApiProperty({ enum: VeiculoStatus })
   status: VeiculoStatus;
 
-  @CreateDateColumn({name: 'created_at'})
+  @CreateDateColumn({ name: 'created_at' })
   @ApiProperty()
   createdAt: Date;
 
-  @UpdateDateColumn({name: 'updated_at'})
+  @UpdateDateColumn({ name: 'updated_at' })
   @ApiProperty()
   updatedAt: Date;
 }

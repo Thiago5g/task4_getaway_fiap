@@ -9,7 +9,7 @@ Esta é a API para uma plataforma de revenda de veículos construída com NestJS
 O sistema permite:
 - Cadastro, edição e listagem de veículos (disponíveis e vendidos), ordenados por preço.
 - Cadastro e atualização de clientes.
-- Registro de vendas de veículos (inclui atualização do status do veículo para "VENDIDO").
+- Registro de vendas (status do veículo atualizado localmente; dados consolidados em microserviço externo de vendas).
 - Autenticação de usuários (via módulo `auth`), com login, validação e verificação de permissões.
 
 A autenticação está implementada internamente com JWT, mas pode ser migrada para serviço externo conforme requisito.
@@ -22,7 +22,7 @@ A autenticação está implementada internamente com JWT, mas pode ser migrada p
 - **usuarios**: validação da existência de usuários e associação a autenticação.
 - **clientes**: cadastro e atualização de dados de clientes (quantidade de carros comprados, dados pessoais etc.).
 - **veiculos**: CRUD de veículos e endpoints de listagem (disponíveis e vendidos).
-- **vendas**: processamento de vendas — valida veículo, atualiza status e registra a transação.
+- **vendas**: resolve cliente por CPF e veículo por placa, atualiza status local e envia (clienteId, veiculoId, preco) para microserviço externo de vendas (configurável via `SALES_MS_URL`). Não há mais tabela local de vendas.
 
 Cada módulo está isolado com controladores, serviços e DTOs, utilizando TypeORM para persistência em banco de dados relacional.
 
@@ -33,3 +33,30 @@ Cada módulo está isolado com controladores, serviços e DTOs, utilizando TypeO
 1. Clone este repositório.
 2. Instale dependências com `npm install`.
 3. Rode a aplicação com `npm run start:dev`.
+
+---
+
+## 🔌 Endpoints de Vendas (Integração com Microserviço)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/vendas` | Realiza uma venda. Body: `{ cpf, placa, preco }` |
+| GET | `/vendas` | Lista vendas retornadas pelo microserviço enriquecidas com dados locais de cliente e veículo |
+| GET | `/vendas/placa/:placa` | Retorna a venda (microserviço) de um veículo identificado pela placa, enriquecida com cliente e veículo |
+
+Observações:
+- Persistência da venda ocorre somente no microserviço externo.
+- Esta API apenas atualiza o status do veículo para `VENDIDO` localmente.
+- Variável de ambiente: `SALES_MS_URL` define a base do microserviço (default `http://localhost:3001`).
+
+---
+
+## 🧪 Testes e Cobertura
+
+Executar testes:
+
+```
+npm run test:cov
+```
+
+Cobertura mínima exigida: 80% (branches, functions, lines, statements). Ajuste em `package.json` se necessário.

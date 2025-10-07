@@ -25,7 +25,7 @@ import { UsuarioModule } from './resources/usuarios/usuario.module';
     ClienteModule,
     VeiculoModule,
     VendaModule,
-    UsuarioModule
+    UsuarioModule,
   ],
   providers: [
     JwtStrategy,
