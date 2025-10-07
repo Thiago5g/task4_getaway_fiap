@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get } from '@nestjs/common';
 import { VendaService } from '../service/venda.service';
 import { CreateVendaDto } from '../dto/create-venda.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
