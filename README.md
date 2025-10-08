@@ -1,5 +1,13 @@
 # Plataforma de Revenda de Veículos – Backend API
 
+![CI](https://github.com/Thiago5g/task4_getaway_fiap/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-80%2B-green?style=flat)
+![Sonar Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=alert_status)
+![Sonar Maintainability](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=sqale_rating)
+![Sonar Security](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=security_rating)
+
+> Substitua `REPLACE_ME_PROJECT_KEY` após configurar o projeto no SonarCloud.
+
 Esta é a API para uma plataforma de revenda de veículos construída com NestJS e TypeORM, como parte do desafio Sub Tech Challenge do curso SOAT – PósTech (fase 3).
 
 ---
@@ -60,3 +68,21 @@ npm run test:cov
 ```
 
 Cobertura mínima exigida: 80% (branches, functions, lines, statements). Ajuste em `package.json` se necessário.
+
+---
+
+## 🔒 Segurança e Segredos
+
+- Nunca commitar arquivos `.env` com credenciais reais (o repositório já ignora por padrão).
+- Use GitHub Secrets para: `DATABASE_URL`, `JWT_SECRET`, `SONAR_TOKEN`, chaves Cloudinary e qualquer token externo.
+- Rotacione segredos expostos imediatamente (caso algum tenha sido commitado antes).
+- Tokens de análise (Sonar / Codecov) não devem ser reutilizados entre projetos.
+- Em produção utilize usuários de banco com permissões mínimas (princípio do menor privilégio).
+- Evite logs contendo tokens ou senhas.
+
+Checklist rápido:
+1. `SONAR_TOKEN` definido apenas em Secrets.
+2. `JWT_SECRET` diferente para ambientes dev/stage/prod.
+3. Usuário do banco sem permissões de DROP em produção (se possível).
+4. Revisar histórico para remoção de segredos expostos (BFG ou git filter-repo se necessário).
+5. Habilitar branch protection em `main` exigindo status da pipeline.

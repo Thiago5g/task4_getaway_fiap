@@ -17,7 +17,7 @@ import { UsuarioModule } from './resources/usuarios/usuario.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: 'postgresql://postgres.ywupywmiuoqwzoupjzew:Egs61512416@aws-0-us-east-2.pooler.supabase.com:5432/postgres',
+      url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       // synchronize: true,
     }),
