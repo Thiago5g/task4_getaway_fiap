@@ -1,0 +1,166 @@
+{
+  "info": {
+    "name": "Task4 FIAP API",
+    "description": "Coleção para testar endpoints (auth, clientes, veiculos, vendas e webhook de pagamentos). Campos do webhook adaptados para português (preco).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "jwt", "value": "" },
+    { "key": "paymentWebhookSecret", "value": "changeme" }
+  ],
+  "item": [
+    {
+      "name": "Auth / Login",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}" }
+      },
+      "event": [ {
+        "listen": "test",
+        "script": {"exec": [
+          "let json = {}; try { json = pm.response.json(); } catch(e) {}\n",
+          "if(json.access_token){ pm.collectionVariables.set('jwt', json.access_token); pm.test('Token JWT capturado', () => pm.expect(json.access_token).to.be.a('string')); } else { pm.test('Resposta contém token', () => { throw new Error('Sem access_token'); }); }\n"
+        ],"type":"text/javascript"}
+      } ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {"name": "Criar Cliente","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes","host":["{{baseUrl}}"],"path":["clientes"]},"body": {"mode":"raw","raw": "{\n  \"nome\": \"Joao da Silva\",\n  \"cpf\": \"12345678900\",\n  \"email\": \"joao@example.com\"\n}"}},"response": []},
+        {"name": "Buscar por CPF","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes/cpf/12345678900","host":["{{baseUrl}}"],"path":["clientes","cpf","12345678900"]}},"response": []},
+        {"name": "Buscar por ID","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes/1","host":["{{baseUrl}}"],"path":["clientes","1"]}},"response": []}
+      ]
+    },
+    {
+      "name": "Veículos",
+      "item": [
+        {"name": "Criar Veículo","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/veiculos","host":["{{baseUrl}}"],"path":["veiculos"]},"body": {"mode":"raw","raw": "{\n  \"placa\": \"ABC1D23\",\n  \"marca\": \"Ford\",\n  \"modelo\": \"Ka\",\n  \"ano\": 2020,\n  \"cor\": \"Prata\",\n  \"preco\": 35000\n}"}},"response": []},
+        {"name": "Editar Veículo","request": {"method": "PUT","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/veiculos/1","host":["{{baseUrl}}"],"path":["veiculos","1"]},"body": {"mode":"raw","raw": "{\n  \"preco\": 36000\n}"}},"response": []},
+        {"name": "Listar Disponíveis","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/veiculos/disponiveis","host":["{{baseUrl}}"],"path":["veiculos","disponiveis"]}},"response": []},
+        {"name": "Listar Vendidos","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/veiculos/vendidos","host":["{{baseUrl}}"],"path":["veiculos","vendidos"]}},"response": []},
+        {"name": "Listar Todos","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/veiculos/todos","host":["{{baseUrl}}"],"path":["veiculos","todos"]}},"response": []}
+      ]
+    },
+    {
+      "name": "Vendas",
+      "item": [
+        {"name": "Realizar Venda","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/vendas","host":["{{baseUrl}}"],"path":["vendas"]},"body": {"mode":"raw","raw": "{\n  \"cpf\": \"12345678900\",\n  \"placa\": \"ABC1D23\",\n  \"preco\": 36000\n}"}},"response": []},
+        {"name": "Listar Vendas","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/vendas","host":["{{baseUrl}}"],"path":["vendas"]}},"response": []},
+        {"name": "Obter Venda por Placa","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/vendas/placa/ABC1D23","host":["{{baseUrl}}"],"path":["vendas","placa","ABC1D23"]}},"response": []}
+      ]
+    },
+    {
+      "name": "Webhook Pagamentos - PAGO",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
+              "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+              "const timestamp = Date.now(); // ms\n",
+              "const data = `t=${timestamp}.${rawBody}`;\n",
+              "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {"type": "text/javascript","exec": [
+            "pm.test('Status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+          ]}
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ {"key": "Content-Type", "value": "application/json"} ],
+        "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-123\",\n  \"paymentCode\": \"pay_001\",\n  \"status\": \"PAGO\",\n  \"preco\": 36000,\n  \"currency\": \"BRL\",\n  \"paidAt\": \"2025-10-07T12:00:00.000Z\",\n  \"provider\": \"MockPay\"\n}"}
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook Pagamentos - PENDENTE",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
+              "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+              "const timestamp = Date.now(); // ms\n",
+              "const data = `t=${timestamp}.${rawBody}`;\n",
+              "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
+              "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {"type": "text/javascript","exec": [
+            "pm.test('Status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+          ]}
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ {"key": "Content-Type", "value": "application/json"} ],
+        "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-pendente-1\",\n  \"paymentCode\": \"pay_002\",\n  \"status\": \"PENDENTE\",\n  \"preco\": 36000,\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook Pagamentos - CANCELADO",
+      "event": [
+        {"listen": "prerequest","script": {"type": "text/javascript","exec": [
+          "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
+          "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+          "const timestamp = Date.now(); // ms\n",
+          "const data = `t=${timestamp}.${rawBody}`;\n",
+          "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
+          "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
+        ]}},
+        {"listen": "test","script": {"type": "text/javascript","exec": [
+          "pm.test('Status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+        ]}}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ {"key": "Content-Type", "value": "application/json"} ],
+        "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-cancelado-1\",\n  \"paymentCode\": \"pay_003\",\n  \"status\": \"CANCELADO\",\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook Pagamentos - FALHOU",
+      "event": [
+        {"listen": "prerequest","script": {"type": "text/javascript","exec": [
+          "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
+          "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+          "const timestamp = Date.now(); // ms\n",
+          "const data = `t=${timestamp}.${rawBody}`;\n",
+          "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
+          "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
+        ]}},
+        {"listen": "test","script": {"type": "text/javascript","exec": [
+          "pm.test('Status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+        ]}}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ {"key": "Content-Type", "value": "application/json"} ],
+        "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-falhou-1\",\n  \"paymentCode\": \"pay_004\",\n  \"status\": \"FALHOU\",\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
+      },
+      "response": []
+    }
+  ]
+}

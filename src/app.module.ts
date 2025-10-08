@@ -10,6 +10,7 @@ import { ClienteModule } from './resources/clientes/cliente.module';
 import { VeiculoModule } from './resources/veiculos/veiculo.module';
 import { VendaModule } from './resources/vendas/venda.module';
 import { UsuarioModule } from './resources/usuarios/usuario.module';
+import { PaymentsWebhookModule } from './resources/payments-webhook/payments-webhook.module';
 
 @Module({
   controllers: [AppController],
@@ -26,6 +27,7 @@ import { UsuarioModule } from './resources/usuarios/usuario.module';
     VeiculoModule,
     VendaModule,
     UsuarioModule,
+    PaymentsWebhookModule,
   ],
   providers: [
     JwtStrategy,

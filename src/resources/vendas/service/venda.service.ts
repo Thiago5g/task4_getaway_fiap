@@ -31,11 +31,17 @@ export class VendaService {
       preco,
     });
 
-    veiculo.status = VeiculoStatus.VENDIDO;
-    await this.veiculoRepo.save(veiculo);
+    // Atualiza status somente se microserviço confirmar sucesso
+    if (external && (external as any).success !== false) {
+      veiculo.status = VeiculoStatus.VENDIDO;
+      await this.veiculoRepo.save(veiculo);
+    }
 
     return {
-      message: 'Venda efetuada com sucesso via microserviço.',
+      message:
+        external && (external as any).success === false
+          ? 'Venda registrada parcialmente: microserviço não confirmou sucesso.'
+          : 'Venda efetuada com sucesso via microserviço.',
       preco,
       cliente: { id: cliente.id, cpf: cliente.cpf },
       veiculo: {
