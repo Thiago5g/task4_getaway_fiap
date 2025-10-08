@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Param, Get } from '@nestjs/common';
 import { VendaService } from '../service/venda.service';
 import { CreateVendaDto } from '../dto/create-venda.dto';
-import { ApiTags, ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiBody } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Vendas')

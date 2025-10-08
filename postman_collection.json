@@ -53,7 +53,7 @@
       ]
     },
     {
-  "name": "Webhook Pagamentos - PAGO",
+      "name": "Webhook Pagamentos - PAGO",
       "event": [
         {
           "listen": "prerequest",
@@ -61,10 +61,10 @@
             "type": "text/javascript",
             "exec": [
               "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
-              "const rawBody = request.body && request.body.raw ? request.body.raw : '';\n",
-              "const timestamp = Math.floor(Date.now()/1000);\n",
-              "function hmacSha256(key, data){ return CryptoJS.HmacSHA256(data, key).toString(CryptoJS.enc.Hex); }\n",
-              "const signature = hmacSha256(secret, rawBody);\n",
+              "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+              "const timestamp = Date.now(); // ms\n",
+              "const data = `t=${timestamp}.${rawBody}`;\n",
+              "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
               "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
             ]
           }
@@ -80,12 +80,12 @@
         "method": "POST",
         "header": [ {"key": "Content-Type", "value": "application/json"} ],
         "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
-  "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-123\",\n  \"paymentCode\": \"pay_001\",\n  \"status\": \"PAGO\",\n  \"preco\": 36000,\n  \"currency\": \"BRL\",\n  \"paidAt\": \"2025-10-07T12:00:00.000Z\",\n  \"provider\": \"MockPay\"\n}"}
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-123\",\n  \"paymentCode\": \"pay_001\",\n  \"status\": \"PAGO\",\n  \"preco\": 36000,\n  \"currency\": \"BRL\",\n  \"paidAt\": \"2025-10-07T12:00:00.000Z\",\n  \"provider\": \"MockPay\"\n}"}
       },
       "response": []
     },
     {
-  "name": "Webhook Pagamentos - PENDENTE",
+      "name": "Webhook Pagamentos - PENDENTE",
       "event": [
         {
           "listen": "prerequest",
@@ -93,10 +93,10 @@
             "type": "text/javascript",
             "exec": [
               "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
-              "const rawBody = request.body && request.body.raw ? request.body.raw : '';\n",
-              "const timestamp = Math.floor(Date.now()/1000);\n",
-              "function hmacSha256(key, data){ return CryptoJS.HmacSHA256(data, key).toString(CryptoJS.enc.Hex); }\n",
-              "const signature = hmacSha256(secret, rawBody);\n",
+              "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+              "const timestamp = Date.now(); // ms\n",
+              "const data = `t=${timestamp}.${rawBody}`;\n",
+              "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
               "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
             ]
           }
@@ -121,10 +121,10 @@
       "event": [
         {"listen": "prerequest","script": {"type": "text/javascript","exec": [
           "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
-          "const rawBody = request.body && request.body.raw ? request.body.raw : '';\n",
-          "const timestamp = Math.floor(Date.now()/1000);\n",
-          "function hmacSha256(key, data){ return CryptoJS.HmacSHA256(data, key).toString(CryptoJS.enc.Hex); }\n",
-          "const signature = hmacSha256(secret, rawBody);\n",
+          "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+          "const timestamp = Date.now(); // ms\n",
+          "const data = `t=${timestamp}.${rawBody}`;\n",
+          "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
           "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
         ]}},
         {"listen": "test","script": {"type": "text/javascript","exec": [
@@ -136,6 +136,29 @@
         "header": [ {"key": "Content-Type", "value": "application/json"} ],
         "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
         "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-cancelado-1\",\n  \"paymentCode\": \"pay_003\",\n  \"status\": \"CANCELADO\",\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook Pagamentos - FALHOU",
+      "event": [
+        {"listen": "prerequest","script": {"type": "text/javascript","exec": [
+          "const secret = pm.collectionVariables.get('paymentWebhookSecret');\n",
+          "const rawBody = (pm.request.body && pm.request.body.raw) ? pm.request.body.raw : '';\n",
+          "const timestamp = Date.now(); // ms\n",
+          "const data = `t=${timestamp}.${rawBody}`;\n",
+          "const signature = CryptoJS.HmacSHA256(data, secret).toString(CryptoJS.enc.Hex);\n",
+          "pm.request.headers.upsert({ key: 'X-Signature', value: `t=${timestamp},sig=${signature}` });\n"
+        ]}},
+        {"listen": "test","script": {"type": "text/javascript","exec": [
+          "pm.test('Status 200/201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+        ]}}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [ {"key": "Content-Type", "value": "application/json"} ],
+        "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-falhou-1\",\n  \"paymentCode\": \"pay_004\",\n  \"status\": \"FALHOU\",\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
       },
       "response": []
     }
