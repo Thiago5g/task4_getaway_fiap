@@ -40,14 +40,18 @@ describe('SignatureMiddleware', () => {
     const req: any = buildReq({ a: 1 }, ts);
     req.header = () => `t=${ts},sig=deadbeef`; // forçar sig errada
     const next = jest.fn();
-    expect(() => middleware.use(req, {} as any, next)).toThrow(UnauthorizedException);
+    expect(() => middleware.use(req, {} as any, next)).toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('rejeita quando timestamp está expirado', () => {
     const oldTs = Date.now() - 10 * 60 * 1000; // 10 min atrás
     const req = buildReq({ a: 1 }, oldTs);
     const next = jest.fn();
-    expect(() => middleware.use(req, {} as any, next)).toThrow(UnauthorizedException);
+    expect(() => middleware.use(req, {} as any, next)).toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('ignora rotas diferentes', () => {

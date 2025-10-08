@@ -69,6 +69,158 @@ npm run test:cov
 
 Cobertura mínima exigida: 80% (branches, functions, lines, statements). Ajuste em `package.json` se necessário.
 
+Principais suites atuais:
+- Utils de cálculo financeiro
+- Integração microserviço de vendas (`venda.service` e client)
+- Webhook de pagamentos (service + middleware assinatura HMAC)
+
+Para rodar apenas e2e (quando adicionados):
+
+```
+npm run test:e2e
+```
+
+---
+
+## 💳 Webhook de Pagamentos
+
+Endpoint público para recebimento de eventos de pagamento de um provedor externo.
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/webhooks/payments` | Recebe evento de pagamento assinado (HMAC) |
+
+### Status aceitos (PT → enviados ao microserviço em EN)
+
+| Recebido (PT) | Encaminhado (EN) | Observações |
+|---------------|-----------------|-------------|
+| `PAGO`        | `PAID`          | Inclui campo `preco` se presente |
+| `CANCELADO`   | `CANCELED`      | Remove `preco` do forward |
+| `FALHOU`      | `FAILED`        | Mantém payload básico |
+| `PENDENTE`    | `PENDING`       | Mantém payload básico |
+
+### Assinatura HMAC
+
+Header: `X-Signature`
+
+Formato: `t=<timestamp_ms>,sig=<hex_hmac>`
+
+String assinada: `t=<timestamp_ms>.<raw_body_json>`
+
+Algoritmo: `HMAC-SHA256` usando o segredo `PAYMENT_WEBHOOK_SECRET`.
+
+Janela de tolerância: 5 minutos (timestamps fora disso são rejeitados - proteção contra replay).
+
+Exemplo de geração (Node / pseudo):
+
+```ts
+const rawBody = JSON.stringify(payload);
+const ts = Date.now();
+const data = `t=${ts}.${rawBody}`;
+const sig = crypto.createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET).update(data).digest('hex');
+const header = `t=${ts},sig=${sig}`;
+```
+
+### Idempotência
+
+- Cada evento possui `eventId` (recebido).
+- Armazenado na tabela `payment_webhook_events` com colunas: `evento_id` (UNIQUE), `dados` (jsonb), `criado_em`.
+- Eventos repetidos retornam `{ received: true, duplicate: true }` sem reenviar ao microserviço.
+
+### Forward para Microserviço de Vendas
+
+- Rota interna: `PUT /internal/payments/sync` (no serviço de vendas) – configurável via `SALES_SERVICE_URL`.
+- Mapeamento de status PT→EN conforme tabela acima.
+- Remove `preco` em cancelamentos e inclui somente quando status é `PAGO`.
+- Falha no forward não gera exception (log de erro + retorno 201 ao provedor) – possibilidade futura: fila de retry.
+
+### Postman
+
+Arquivo `postman_collection.json` inclui:
+- Scripts para gerar assinatura `X-Signature` automaticamente.
+- Exemplos de payloads para `PAGO`, `PENDENTE`, `CANCELADO`, `FALHOU`.
+
+---
+
+## 🔑 Variáveis de Ambiente
+
+| Nome | Descrição | Default | Obrigatória |
+|------|-----------|---------|-------------|
+| `DATABASE_URL` | Conexão PostgreSQL | - | Sim |
+| `JWT_SECRET` | Assinatura JWT interno | - | Sim |
+| `JWT_EXPIRES_IN` | Expiração JWT | `1d` | Não |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary | - | Sim (se usar upload) |
+| `CLOUDINARY_API_KEY` | Cloudinary | - | Sim |
+| `CLOUDINARY_API_SECRET` | Cloudinary | - | Sim |
+| `PAYMENT_WEBHOOK_SECRET` | Segredo HMAC do webhook de pagamentos | - | Sim (webhook) |
+| `SALES_SERVICE_URL` | Base URL microserviço de vendas | `http://localhost:3001` | Não |
+
+Exemplo `.env` (não commitar valores reais):
+
+```
+DATABASE_URL=postgresql://user:pass@host:5432/db
+JWT_SECRET=trocar_depois
+JWT_EXPIRES_IN=1d
+PAYMENT_WEBHOOK_SECRET=coloque_um_hex_ou_base64_forte
+SALES_SERVICE_URL=http://localhost:3001
+```
+
+Gerar segredo forte (PowerShell):
+
+```powershell
+[byte[]]$b=New-Object byte[] 32; (New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($b); ($b | ForEach-Object { $_.ToString("x2") }) -join ""
+```
+
+---
+
+## 🧩 Estrutura do Banco (Webhook)
+
+Tabela `payment_webhook_events`:
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | uuid | PK |
+| evento_id | varchar | ID externo do evento (UNIQUE) |
+| dados | jsonb | Payload recebido completo |
+| criado_em | timestamptz | Carimbo de criação |
+
+Migrations: usar `npm run build` seguido de comando TypeORM (`npx typeorm-ts-node-commonjs migration:run -d src/data-source.ts`).
+
+---
+
+## 🚀 Execução Rápida
+
+```
+npm install
+npm run start:dev
+```
+
+Health check (se existir): `GET /` ou utilize Swagger (se habilitado) em `/api`.
+
+---
+
+## 🛡️ Melhoria Futura (Roadmap Curto)
+
+- Fila de retry de forward (Bull / Redis) para eventos de pagamento.
+- Métricas (Prometheus) de contagem de eventos, duplicados e falhas de forward.
+- Suporte a rotação dupla de segredos HMAC (`PRIMARY`/`SECONDARY`).
+- Hardening de headers de segurança (Helmet) e rate limiting para o endpoint de webhook.
+
+---
+
+## 🤝 Contribuição
+
+1. Crie branch: `git checkout -b feature/nome-feature`
+2. Commits pequenos e descritivos
+3. Abra PR apontando para `develop-test` (ou main conforme fluxo)
+4. Garantir testes ≥ 80% e lint sem erros
+
+---
+
+## 📄 Licença
+
+Projeto acadêmico – uso interno educacional. Ajuste a licença conforme necessidade antes de produção.
+
 ---
 
 ## 🔒 Segurança e Segredos
