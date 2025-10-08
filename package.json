@@ -1,5 +1,5 @@
 {
-  "name": "task_3_fiap",
+  "name": "task_4_gateway",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -80,6 +80,8 @@
     "collectCoverageFrom": [
       "**/common/utils/**/*.ts",
       "**/resources/vendas/service/**/*.ts",
+      "**/resources/payments-webhook/service/**/*.ts",
+      "**/resources/payments-webhook/signature.middleware.ts",
       "!**/*.spec.ts",
       "!**/migrations/**",
       "!**/dto/**",
