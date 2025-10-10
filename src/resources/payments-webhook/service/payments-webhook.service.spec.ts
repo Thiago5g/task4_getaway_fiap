@@ -44,15 +44,20 @@ describe('PaymentsWebhookService', () => {
     };
 
     const res = await service.handle(dto);
-    expect(res.message).toBe('Status atualizado com sucesso');
+    expect((res as any).forwarded).toBe(true);
     expect(repo.save).toHaveBeenCalledWith({
       eventoId: dto.eventId,
       dados: dto,
     });
     expect(http.patch).toHaveBeenCalled();
-    const forwarded = http.patch.mock.calls[0][1];
+    const [url, forwarded] = [
+      http.patch.mock.calls[0][0],
+      http.patch.mock.calls[0][1],
+    ];
+    expect(url).toContain('/vendas/pagamento');
     expect(forwarded.preco).toBe(12345);
     expect(forwarded.statusPagamento).toBe('PAGO');
+    expect(forwarded.codigoPagamento).toBe(dto.paymentCode);
   });
 
   it('retorna duplicate quando evento já existe', async () => {
@@ -64,7 +69,7 @@ describe('PaymentsWebhookService', () => {
       preco: 1,
       currency: 'BRL',
     } as any);
-    expect(res.duplicate).toBe(true);
+    expect((res as any).duplicate).toBe(true);
     expect(repo.save).not.toHaveBeenCalled();
     expect(http.patch).not.toHaveBeenCalled();
   });
@@ -80,7 +85,7 @@ describe('PaymentsWebhookService', () => {
       preco: 10,
       currency: 'BRL',
     } as any);
-    expect(res.message).toBe('Status atualizado com sucesso');
+    expect((res as any).forwarded).toBe(false);
   });
 
   it('encaminha CANCELADO sem preco', async () => {
@@ -94,9 +99,10 @@ describe('PaymentsWebhookService', () => {
       currency: 'BRL',
     };
     const res = await service.handle(dto);
-    expect(res.message).toBe('Status atualizado com sucesso');
+    expect((res as any).forwarded).toBe(true);
     const forwarded = http.patch.mock.calls[0][1];
     expect(forwarded.preco).toBeUndefined();
     expect(forwarded.statusPagamento).toBe('CANCELADO');
+    expect(forwarded.codigoPagamento).toBe(dto.paymentCode);
   });
 });
