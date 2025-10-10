@@ -5,7 +5,7 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "baseUrl", "value": "https://task4-getaway-fiap.onrender.com" },
     { "key": "jwt", "value": "" },
     { "key": "paymentWebhookSecret", "value": "changeme" }
   ],
@@ -16,7 +16,7 @@
         "method": "POST",
         "header": [ { "key": "Content-Type", "value": "application/json" } ],
         "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth","login"] },
-        "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}" }
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"teste@fiap.com\",\n  \"password\": \"123456\"\n}" }
       },
       "event": [ {
         "listen": "test",
@@ -29,8 +29,8 @@
     {
       "name": "Clientes",
       "item": [
-        {"name": "Criar Cliente","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes","host":["{{baseUrl}}"],"path":["clientes"]},"body": {"mode":"raw","raw": "{\n  \"nome\": \"Joao da Silva\",\n  \"cpf\": \"12345678900\",\n  \"email\": \"joao@example.com\"\n}"}},"response": []},
-        {"name": "Buscar por CPF","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes/cpf/12345678900","host":["{{baseUrl}}"],"path":["clientes","cpf","12345678900"]}},"response": []},
+        {"name": "Criar Cliente","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes","host":["{{baseUrl}}"],"path":["clientes"]},"body": {"mode":"raw","raw": "{\n  \"nome\": \"Joao da Silva\",\n  \"cpf\": \"123.456.789.99\",\n  \"email\": \"joao@example.com\"\n}"}},"response": []},
+        {"name": "Buscar por CPF","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes/cpf/123.456.789.99","host":["{{baseUrl}}"],"path":["clientes","cpf","123.456.789.99"]}},"response": []},
         {"name": "Buscar por ID","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/clientes/1","host":["{{baseUrl}}"],"path":["clientes","1"]}},"response": []}
       ]
     },
@@ -47,7 +47,7 @@
     {
       "name": "Vendas",
       "item": [
-        {"name": "Realizar Venda","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/vendas","host":["{{baseUrl}}"],"path":["vendas"]},"body": {"mode":"raw","raw": "{\n  \"cpf\": \"12345678900\",\n  \"placa\": \"ABC1D23\",\n  \"preco\": 36000\n}"}},"response": []},
+        {"name": "Realizar Venda","request": {"method": "POST","header": [ {"key": "Content-Type","value": "application/json"},{"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/vendas","host":["{{baseUrl}}"],"path":["vendas"]},"body": {"mode":"raw","raw": "{\n  \"cpf\": \"123.456.789.99\",\n  \"placa\": \"ABC1D23\",\n  \"preco\": 36000\n}"}},"response": []},
         {"name": "Listar Vendas","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/vendas","host":["{{baseUrl}}"],"path":["vendas"]}},"response": []},
         {"name": "Obter Venda por Placa","request": {"method": "GET","header": [ {"key": "Authorization","value": "Bearer {{jwt}}"}],"url": {"raw": "{{baseUrl}}/vendas/placa/ABC1D23","host":["{{baseUrl}}"],"path":["vendas","placa","ABC1D23"]}},"response": []}
       ]

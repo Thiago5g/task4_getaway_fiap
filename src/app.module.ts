@@ -18,7 +18,7 @@ import { PaymentsWebhookModule } from './resources/payments-webhook/payments-web
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: process.env.DATABASE_URL,
+      url: 'postgresql://postgres.ywupywmiuoqwzoupjzew:Egs61512416@aws-0-us-east-2.pooler.supabase.com:6543/postgres',
       autoLoadEntities: true,
       // synchronize: true,
     }),

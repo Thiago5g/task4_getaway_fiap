@@ -2,13 +2,16 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { firstValueFrom } from 'rxjs';
 import { IncomingPaymentWebhookDto } from '../dto/incoming-payment-webhook.dto';
 import { PaymentWebhookEvent } from '../entity/payment-webhook-event.entity';
+
+type StatusPagamento = 'PENDENTE' | 'PAGO' | 'CANCELADO' | 'FALHOU';
 
 @Injectable()
 export class PaymentsWebhookService {
   private readonly logger = new Logger(PaymentsWebhookService.name);
-  private salesServiceUrl =
+  private readonly salesServiceUrl =
     process.env.SALES_SERVICE_URL || 'http://localhost:3001';
 
   constructor(
@@ -18,6 +21,7 @@ export class PaymentsWebhookService {
   ) {}
 
   async handle(dto: IncomingPaymentWebhookDto) {
+    // 1. Idempotência: já processado?
     const existing = await this.repo.findOne({
       where: { eventoId: dto.eventId },
     });
@@ -28,39 +32,61 @@ export class PaymentsWebhookService {
 
     await this.repo.save({ eventoId: dto.eventId, dados: dto });
 
-    try {
-      const forwardPayload: any = { ...dto };
-      // Mapear status PT -> EN se microserviço ainda espera inglês (ajuste se necessário)
-      const statusMap: Record<string, string> = {
-        PAGO: 'PAID',
-        CANCELADO: 'CANCELED',
-        FALHOU: 'FAILED',
-        PENDENTE: 'PENDING',
-      };
-      forwardPayload.status = statusMap[dto.status] || dto.status;
+    // 2. Normalizar status externo (caso venha em lower / outro formato)
 
-      // Incluir preco apenas quando pago e informado
-      if (dto.status === 'PAGO' && typeof dto.preco === 'number') {
-        forwardPayload.preco = dto.preco;
-      }
-      // Se cancelado, remover preco se existir (não necessário para cancelamento)
-      if (dto.status === 'CANCELADO') {
-        delete forwardPayload.preco;
-      }
-      await this.http
-        .put(`${this.salesServiceUrl}/internal/payments/sync`, forwardPayload, {
-          timeout: 5000,
-        })
-        .toPromise();
-      this.logger.log(
-        `Forwarded payment event ${dto.eventId} status=${dto.status} (mapped=${forwardPayload.status}) -> sales service`,
+    if (!dto.status) {
+      this.logger.warn(
+        `Evento ${dto.eventId} com status desconhecido: ${dto.status}`,
       );
+      return { received: true, unsupportedStatus: dto.status };
+    }
+
+    const codigoPagamento = dto.paymentCode;
+    // 3. Construir payload conforme o controller do microserviço de vendas
+    const payload: {
+      statusPagamento: StatusPagamento;
+      preco?: number;
+      codigoPagamento: string;
+    } = {
+      statusPagamento: dto.status,
+      codigoPagamento,
+      preco: dto.preco,
+    };
+
+    if (
+      dto.status === 'PAGO' &&
+      typeof dto.preco === 'number' &&
+      dto.preco >= 0
+    ) {
+      payload.preco = dto.preco;
+    }
+
+    const endpoint = `${this.salesServiceUrl}/vendas/pagamento`;
+
+    try {
+      const response = await firstValueFrom(
+        this.http.patch(endpoint, payload, {
+          timeout: 5000,
+        }),
+      );
+      this.logger.log(
+        `Forwarded payment event ${dto.eventId} codigoPagamento=${codigoPagamento} status=${dto.status} -> sales service (status ${response.status})`,
+      );
+      return {
+        forwarded: true,
+        salesResponse: response.data,
+      };
     } catch (err: any) {
       this.logger.error(
-        `Failed forwarding event ${dto.eventId}: ${err?.message || err}`,
+        `Failed forwarding event ${dto.eventId} codigoPagamento=${codigoPagamento}: ${
+          err?.message || err
+        }`,
       );
-      // TODO: enqueue retry (BullMQ) if required
+      // Futuro: reenfileirar para retry
+      return {
+        forwarded: false,
+        error: 'Falha ao atualizar pagamento no serviço de vendas',
+      };
     }
-    return { received: true };
   }
 }
