@@ -195,10 +195,6 @@ npm install
 npm run start:dev
 ```
 
-Health check (se existir): `GET /` ou utilize Swagger (se habilitado) em `/api`.
-
----
-
 ## 🛡️ Melhoria Futura (Roadmap Curto)
 
 - Fila de retry de forward (Bull / Redis) para eventos de pagamento.
